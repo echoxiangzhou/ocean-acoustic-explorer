@@ -1,17 +1,20 @@
 import { useState, useCallback } from 'react'
-import { CesiumGlobe } from '../../components/globe/CesiumGlobe'
+import { CesiumGlobe, LAYER_CONFIG } from '../../components/globe/CesiumGlobe'
 import { LayerControls } from '../../components/controls/LayerControls'
 import { FeatureTooltip } from '../../components/common/FeatureTooltip'
+import { ColorBar } from '../../components/common/ColorBar'
 import { MonthSlider } from '../../components/controls/MonthSlider'
 import { useLayerStore } from '../../stores/layerStore'
 import './GlobalOverview.css'
 
 export function GlobalOverview() {
-  const { month } = useLayerStore()
+  const { month, activeLayer } = useLayerStore()
   const [tooltip, setTooltip] = useState<{
     lat: number; lon: number; features: any
   } | null>(null)
   const [loading, setLoading] = useState(false)
+
+  const layerCfg = LAYER_CONFIG[activeLayer]
 
   const handleClick = useCallback(async (lat: number, lon: number) => {
     setLoading(true)
@@ -46,6 +49,15 @@ export function GlobalOverview() {
             lon={tooltip.lon}
             features={tooltip.features}
             onClose={() => setTooltip(null)}
+          />
+        )}
+        {layerCfg && (
+          <ColorBar
+            label={layerCfg.label}
+            unit={layerCfg.unit}
+            vmin={layerCfg.vmin}
+            vmax={layerCfg.vmax}
+            colormap={layerCfg.colormap}
           />
         )}
         <MonthSlider />

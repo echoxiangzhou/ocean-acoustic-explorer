@@ -128,6 +128,7 @@ export function CesiumGlobe({ onClick }: CesiumGlobeProps) {
       const provider = new WebMapServiceImageryProvider({
         url: `${XPUBLISH_BASE}/datasets/${datasetId}/wms/`,
         layers: activeLayer,
+        getFeatureInfoUrl: undefined as any,
         parameters: {
           version: '1.3.0',
           format: 'image/png',
@@ -137,6 +138,8 @@ export function CesiumGlobe({ onClick }: CesiumGlobeProps) {
           styles: 'raster/default',
         },
       })
+      // Disable GetFeatureInfo (xpublish-wms doesn't support it)
+      provider.enablePickFeatures = false
 
       const layer = viewer.imageryLayers.addImageryProvider(provider)
       layer.alpha = 0.7
