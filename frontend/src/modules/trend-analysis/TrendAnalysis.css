@@ -1,0 +1,66 @@
+.trend-layout {
+  display: flex;
+  height: 100%;
+}
+
+.trend-map {
+  flex: 1;
+  position: relative;
+}
+
+.trend-panel {
+  width: 420px;
+  background: var(--bg-panel);
+  border-left: 1px solid var(--border-color);
+  display: flex;
+  flex-direction: column;
+  overflow-y: auto;
+}
+
+.trend-hint {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  color: var(--text-dim);
+  font-size: 14px;
+  padding: 20px;
+  text-align: center;
+}
+
+.trend-header {
+  padding: 12px 16px;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--accent-cyan);
+  border-bottom: 1px solid var(--border-color);
+}
+
+.trend-subtitle {
+  display: block;
+  font-size: 11px;
+  font-weight: 400;
+  color: var(--text-dim);
+  margin-top: 2px;
+}
+
+.trend-charts {
+  padding: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.loading-badge {
+  position: absolute;
+  top: 16px;
+  left: 50%;
+  transform: translateX(-50%);
+  padding: 6px 16px;
+  background: var(--bg-panel);
+  border: 1px solid var(--accent-cyan);
+  border-radius: 6px;
+  color: var(--accent-cyan);
+  font-size: 13px;
+  z-index: 20;
+}

@@ -54,10 +54,16 @@ def extract_all_features(
     if len(c) < 3:
         return _empty_features()
 
+    # Surface speed
+    surface_speed = float(c[0])
+
     # 1. Sound channel axis: depth of minimum sound speed
     min_idx = int(np.argmin(c))
     channel_axis_depth = float(d[min_idx])
     channel_axis_speed = float(c[min_idx])
+
+    # Delta c: surface speed - channel axis speed
+    delta_c = surface_speed - channel_axis_speed
 
     # 2. Surface duct thickness
     surface_duct = _surface_duct_thickness(d, c)
@@ -79,6 +85,8 @@ def extract_all_features(
     return {
         "channel_axis_depth": channel_axis_depth,
         "channel_axis_speed": channel_axis_speed,
+        "surface_speed": surface_speed,
+        "delta_c": delta_c,
         "surface_duct_thickness": surface_duct,
         "thermocline_gradient": thermo_gradient,
         "cz_distance_km": cz_distance,
@@ -91,6 +99,8 @@ def _empty_features() -> dict:
     return {
         "channel_axis_depth": np.nan,
         "channel_axis_speed": np.nan,
+        "surface_speed": np.nan,
+        "delta_c": 0.0,
         "surface_duct_thickness": 0.0,
         "thermocline_gradient": 0.0,
         "cz_distance_km": np.nan,
