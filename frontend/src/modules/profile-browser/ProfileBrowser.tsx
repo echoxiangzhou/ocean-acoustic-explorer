@@ -2,7 +2,8 @@ import { useState, useCallback } from 'react'
 import { CesiumGlobe } from '../../components/globe/CesiumGlobe'
 import { ProfileChart } from '../../components/charts/ProfileChart'
 import { useLayerStore } from '../../stores/layerStore'
-import { fetchProfile, SoundProfile } from '../../services/api'
+import { fetchProfile } from '../../services/api'
+import type { SoundProfile } from '../../services/api'
 import './ProfileBrowser.css'
 
 interface ProfileEntry {
