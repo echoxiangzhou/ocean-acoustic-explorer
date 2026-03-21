@@ -1,0 +1,26 @@
+[project]
+name = "ocean-acoustic-backend"
+version = "0.1.0"
+requires-python = ">=3.11"
+dependencies = [
+    "fastapi>=0.115.0",
+    "uvicorn[standard]>=0.34.0",
+    "xarray>=2025.1.0",
+    "zarr>=3.0.0",
+    "netcdf4>=1.7.0",
+    "gsw>=3.6.0",
+    "numpy>=2.0.0",
+    "scipy>=1.14.0",
+    "redis>=5.0.0",
+    "celery>=5.4.0",
+    "fsspec>=2024.10.0",
+    "s3fs>=2024.10.0",
+    "pydantic>=2.10.0",
+    "websockets>=13.0",
+]
+
+[project.optional-dependencies]
+acoustic = [
+    "arlpy>=1.8.0",
+    "pyram>=0.2.0",
+]

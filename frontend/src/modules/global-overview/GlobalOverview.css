@@ -1,0 +1,9 @@
+.module-layout {
+  display: flex;
+  height: 100%;
+}
+
+.globe-container {
+  flex: 1;
+  position: relative;
+}

@@ -1,0 +1,65 @@
+services:
+  nginx:
+    image: nginx:alpine
+    ports:
+      - "80:80"
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/conf.d/default.conf:ro
+    depends_on:
+      - frontend
+      - backend
+      - wms-server
+
+  frontend:
+    build: ./frontend
+    volumes:
+      - ./frontend/src:/app/src
+      - ./frontend/index.html:/app/index.html
+    environment:
+      - VITE_CESIUM_TOKEN=${CESIUM_TOKEN:-}
+
+  backend:
+    build: ./backend
+    volumes:
+      - ./backend/app:/app/app
+      - ocean_data:/data:ro
+    environment:
+      - DATA_DIR=/data
+      - WOA23_DIR=/data/woa23
+      - GEBCO_PATH=/data/gebco/GEBCO_2024.nc
+      - HYCOM_DIR=/data/hycom
+      - SODA_DIR=/data/soda
+      - REDIS_URL=redis://redis:6379/0
+      - CELERY_BROKER=redis://redis:6379/1
+    depends_on:
+      - redis
+
+  wms-server:
+    build: ./wms-server
+    volumes:
+      - ocean_data:/data:ro
+    environment:
+      - DATA_DIR=/data
+      - WOA23_DIR=/data/woa23
+
+  worker:
+    build: ./backend
+    command: celery -A app.tasks worker --loglevel=info
+    volumes:
+      - ocean_data:/data:ro
+    environment:
+      - DATA_DIR=/data
+      - CELERY_BROKER=redis://redis:6379/1
+    depends_on:
+      - redis
+
+  redis:
+    image: redis:7-alpine
+
+volumes:
+  ocean_data:
+    driver: local
+    driver_opts:
+      type: none
+      o: bind
+      device: /data/nas_data/ocean_acoustic
