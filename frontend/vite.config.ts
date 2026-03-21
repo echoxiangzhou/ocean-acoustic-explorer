@@ -4,6 +4,9 @@ import cesium from 'vite-plugin-cesium'
 
 export default defineConfig({
   plugins: [react(), cesium()],
+  optimizeDeps: {
+    include: ['resium', 'cesium', 'react', 'react-dom', 'react-plotly.js', 'plotly.js-dist-min'],
+  },
   server: {
     host: '0.0.0.0',
     port: 5173,
