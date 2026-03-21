@@ -39,8 +39,7 @@ services:
     volumes:
       - ocean_data:/data:ro
     environment:
-      - DATA_DIR=/data
-      - WOA23_DIR=/data/woa23
+      - ZARR_DIR=/data/zarr
 
   worker:
     build: ./backend
