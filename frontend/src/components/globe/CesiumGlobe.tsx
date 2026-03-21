@@ -1,8 +1,8 @@
 import { useRef, useEffect, useCallback } from 'react'
 import {
-  Ion,
   Viewer,
   WebMapServiceImageryProvider,
+  OpenStreetMapImageryProvider,
   Color,
   Cartographic,
   Math as CesiumMath,
@@ -15,9 +15,8 @@ import {
 import 'cesium/Build/Cesium/Widgets/widgets.css'
 import { useLayerStore } from '../../stores/layerStore'
 
-Ion.defaultAccessToken = import.meta.env.VITE_CESIUM_TOKEN || ''
-
-const WMS_BASE = '/wms'
+// xpublish WMS URL: /xpublish/datasets/{dataset_id}/wms/
+const XPUBLISH_BASE = '/xpublish'
 
 const LAYER_CONFIG: Record<string, { vmin: number; vmax: number; colormap: string; unit: string; label: string }> = {
   channel_axis_depth: { vmin: 0, vmax: 1500, colormap: 'viridis', unit: 'm', label: '声道轴深度' },
@@ -54,6 +53,9 @@ export function CesiumGlobe({ onClick }: CesiumGlobeProps) {
       geocoder: false,
       infoBox: false,
       selectionIndicator: false,
+      imageryProvider: new OpenStreetMapImageryProvider({
+        url: 'https://tile.openstreetmap.org/',
+      }),
     })
 
     viewer.scene.globe.baseColor = Color.fromCssColorString('#0a1628')
@@ -115,15 +117,18 @@ export function CesiumGlobe({ onClick }: CesiumGlobeProps) {
     if (!layerCfg) return
 
     try {
+      // xpublish-wms: /datasets/{dataset_id}/wms/?service=WMS&request=GetMap&...
+      // Dataset naming: {variable}_m{month} or {variable} for default (month 01)
+      const monthStr = String(month).padStart(2, '0')
+      const datasetId = `${activeLayer}_m${monthStr}`
+
       const provider = new WebMapServiceImageryProvider({
-        url: WMS_BASE,
-        layers: `features_month${String(month).padStart(2, '0')}_src50m/${activeLayer}`,
+        url: `${XPUBLISH_BASE}/datasets/${datasetId}/wms/`,
+        layers: activeLayer,
         parameters: {
           format: 'image/png',
           transparent: 'true',
-          colormap: layerCfg.colormap,
-          vmin: layerCfg.vmin,
-          vmax: layerCfg.vmax,
+          colorscalerange: `${layerCfg.vmin},${layerCfg.vmax}`,
         },
       })
 
