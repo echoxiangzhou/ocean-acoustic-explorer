@@ -131,6 +131,7 @@ export function CesiumGlobe({ onClick }: CesiumGlobeProps) {
           transparent: 'true',
           colorscalerange: `${layerCfg.vmin},${layerCfg.vmax}`,
           crs: 'EPSG:4326',
+          styles: 'raster/default',
         },
       })
 
