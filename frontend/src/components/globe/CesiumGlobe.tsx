@@ -1,16 +1,16 @@
-import { useRef, useCallback } from 'react'
-import { Viewer as ResiumViewer, ImageryLayer, CameraFlyTo } from 'resium'
+import { useRef, useEffect, useCallback } from 'react'
 import {
   Ion,
+  Viewer,
   WebMapServiceImageryProvider,
-  Cartesian3,
   Color,
-  SceneMode,
   Cartographic,
   Math as CesiumMath,
-  Viewer,
   ScreenSpaceEventType,
+  ScreenSpaceEventHandler,
   defined,
+  ImageryLayer,
+  Cartesian3,
 } from 'cesium'
 import 'cesium/Build/Cesium/Widgets/widgets.css'
 import { useLayerStore } from '../../stores/layerStore'
@@ -30,36 +30,60 @@ const LAYER_CONFIG: Record<string, { vmin: number; vmax: number; colormap: strin
 
 interface CesiumGlobeProps {
   onClick?: (lat: number, lon: number) => void
-  sceneMode?: SceneMode
 }
 
-export function CesiumGlobe({ onClick, sceneMode = SceneMode.SCENE3D }: CesiumGlobeProps) {
-  const viewerRef = useRef<{ cesiumElement?: Viewer }>(null)
+export function CesiumGlobe({ onClick }: CesiumGlobeProps) {
+  const containerRef = useRef<HTMLDivElement>(null)
+  const viewerRef = useRef<Viewer | null>(null)
+  const wmsLayerRef = useRef<ImageryLayer | null>(null)
+  const handlerRef = useRef<ScreenSpaceEventHandler | null>(null)
   const { activeLayer, month } = useLayerStore()
 
-  const layerCfg = LAYER_CONFIG[activeLayer]
+  // Initialize Cesium Viewer once
+  useEffect(() => {
+    if (!containerRef.current || viewerRef.current) return
 
-  // Build WMS provider for active feature layer
-  const wmsProvider = layerCfg
-    ? new WebMapServiceImageryProvider({
-        url: WMS_BASE,
-        layers: `features_month${String(month).padStart(2, '0')}_src50m/${activeLayer}`,
-        parameters: {
-          format: 'image/png',
-          transparent: 'true',
-          colormap: layerCfg.colormap,
-          vmin: layerCfg.vmin,
-          vmax: layerCfg.vmax,
-        },
-      })
-    : undefined
+    const viewer = new Viewer(containerRef.current, {
+      animation: false,
+      timeline: false,
+      homeButton: false,
+      navigationHelpButton: false,
+      sceneModePicker: false,
+      baseLayerPicker: false,
+      fullscreenButton: false,
+      geocoder: false,
+      infoBox: false,
+      selectionIndicator: false,
+    })
 
-  // Handle click -> get lat/lon from globe
-  const handleClick = useCallback(() => {
-    const viewer = viewerRef.current?.cesiumElement
+    viewer.scene.globe.baseColor = Color.fromCssColorString('#0a1628')
+    viewer.camera.flyTo({
+      destination: Cartesian3.fromDegrees(120, 15, 15000000),
+      duration: 0,
+    })
+
+    viewerRef.current = viewer
+
+    return () => {
+      if (handlerRef.current) {
+        handlerRef.current.destroy()
+        handlerRef.current = null
+      }
+      viewer.destroy()
+      viewerRef.current = null
+    }
+  }, [])
+
+  // Handle click events
+  useEffect(() => {
+    const viewer = viewerRef.current
     if (!viewer || !onClick) return
 
-    const handler = viewer.screenSpaceEventHandler
+    if (handlerRef.current) {
+      handlerRef.current.destroy()
+    }
+
+    const handler = new ScreenSpaceEventHandler(viewer.scene.canvas)
     handler.setInputAction((movement: { position: { x: number; y: number } }) => {
       const cartesian = viewer.camera.pickEllipsoid(
         movement.position,
@@ -72,34 +96,50 @@ export function CesiumGlobe({ onClick, sceneMode = SceneMode.SCENE3D }: CesiumGl
         onClick(lat, lon)
       }
     }, ScreenSpaceEventType.LEFT_CLICK)
+
+    handlerRef.current = handler
   }, [onClick])
 
+  // Update WMS layer when activeLayer or month changes
+  useEffect(() => {
+    const viewer = viewerRef.current
+    if (!viewer) return
+
+    // Remove old WMS layer
+    if (wmsLayerRef.current) {
+      viewer.imageryLayers.remove(wmsLayerRef.current)
+      wmsLayerRef.current = null
+    }
+
+    const layerCfg = LAYER_CONFIG[activeLayer]
+    if (!layerCfg) return
+
+    try {
+      const provider = new WebMapServiceImageryProvider({
+        url: WMS_BASE,
+        layers: `features_month${String(month).padStart(2, '0')}_src50m/${activeLayer}`,
+        parameters: {
+          format: 'image/png',
+          transparent: 'true',
+          colormap: layerCfg.colormap,
+          vmin: layerCfg.vmin,
+          vmax: layerCfg.vmax,
+        },
+      })
+
+      const layer = viewer.imageryLayers.addImageryProvider(provider)
+      layer.alpha = 0.7
+      wmsLayerRef.current = layer
+    } catch (e) {
+      console.warn('WMS layer failed to load:', e)
+    }
+  }, [activeLayer, month])
+
   return (
-    <ResiumViewer
-      ref={viewerRef as any}
-      full
-      sceneMode={sceneMode}
-      baseColor={Color.fromCssColorString('#0a1628')}
-      animation={false}
-      timeline={false}
-      homeButton={false}
-      navigationHelpButton={false}
-      sceneModePicker={false}
-      baseLayerPicker={false}
-      fullscreenButton={false}
-      geocoder={false}
-      infoBox={false}
-      selectionIndicator={false}
-      onUpdate={handleClick}
-    >
-      {wmsProvider && (
-        <ImageryLayer imageryProvider={wmsProvider} alpha={0.7} />
-      )}
-      <CameraFlyTo
-        destination={Cartesian3.fromDegrees(120, 15, 15000000)}
-        duration={0}
-      />
-    </ResiumViewer>
+    <div
+      ref={containerRef}
+      style={{ width: '100%', height: '100%', position: 'absolute', top: 0, left: 0 }}
+    />
   )
 }
 

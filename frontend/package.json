@@ -10,7 +10,6 @@
   },
   "dependencies": {
     "cesium": "^1.124.0",
-    "resium": "^1.18.0",
     "plotly.js-dist-min": "^2.35.0",
     "react-plotly.js": "^2.6.0",
     "react": "^19.2.4",
