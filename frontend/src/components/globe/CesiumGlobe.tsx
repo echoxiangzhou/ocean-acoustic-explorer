@@ -126,9 +126,11 @@ export function CesiumGlobe({ onClick }: CesiumGlobeProps) {
         url: `${XPUBLISH_BASE}/datasets/${datasetId}/wms/`,
         layers: activeLayer,
         parameters: {
+          version: '1.3.0',
           format: 'image/png',
           transparent: 'true',
           colorscalerange: `${layerCfg.vmin},${layerCfg.vmax}`,
+          crs: 'EPSG:4326',
         },
       })
 
