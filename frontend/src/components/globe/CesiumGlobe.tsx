@@ -2,7 +2,7 @@ import { useRef, useEffect, useCallback } from 'react'
 import {
   Viewer,
   WebMapServiceImageryProvider,
-  OpenStreetMapImageryProvider,
+  UrlTemplateImageryProvider,
   Color,
   Cartographic,
   Math as CesiumMath,
@@ -53,8 +53,11 @@ export function CesiumGlobe({ onClick }: CesiumGlobeProps) {
       geocoder: false,
       infoBox: false,
       selectionIndicator: false,
-      imageryProvider: new OpenStreetMapImageryProvider({
-        url: 'https://tile.openstreetmap.org/',
+      // Use CartoDB dark basemap (fast CDN, fits dark theme)
+      imageryProvider: new UrlTemplateImageryProvider({
+        url: 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}.png',
+        subdomains: ['a', 'b', 'c', 'd'],
+        credit: 'CartoDB',
       }),
     })
 
