@@ -2,11 +2,11 @@ import { useLayerStore } from '../../stores/layerStore'
 import './LayerControls.css'
 
 const LAYERS = [
-  { id: 'channel_axis', label: '声道轴深度' },
+  { id: 'channel_axis_depth', label: '声道轴深度' },
   { id: 'surface_duct', label: '表面声道厚度' },
-  { id: 'thermocline_grad', label: '跃层梯度' },
-  { id: 'convergence_zone', label: '会聚区距离' },
-  { id: 'shadow_zone', label: '声影区距离' },
+  { id: 'thermocline_gradient', label: '跃层梯度' },
+  { id: 'convergence_zone_km', label: '会聚区距离' },
+  { id: 'shadow_zone_km', label: '声影区距离' },
   { id: 'field_type', label: '声场类型' },
 ]
 
