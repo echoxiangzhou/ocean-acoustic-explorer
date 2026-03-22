@@ -1,8 +1,6 @@
 """
 xpublish-wms server for OceanAcoustic Explorer.
-
 Preloads all feature data into memory at startup.
-NaN values kept as-is (xpublish-wms renders NaN as transparent in raster mode).
 """
 
 import os
@@ -20,7 +18,7 @@ PORT = int(os.getenv("PORT", "8090"))
 
 
 def _make_cf(ds: xr.Dataset) -> xr.Dataset:
-    """Ensure CF-compliant coordinates."""
+    """Ensure CF-compliant coordinates. Keep NaN as-is for transparency."""
     if "lat" in ds.dims:
         ds = ds.rename({"lat": "latitude", "lon": "longitude"})
     if "latitude" in ds.coords:
@@ -32,13 +30,13 @@ def _make_cf(ds: xr.Dataset) -> xr.Dataset:
 def load_datasets() -> dict:
     datasets = {}
 
-    # 1. Load features from Zarr
+    # 1. Try Zarr first
     features_zarr = os.path.join(ZARR_DIR, "features.zarr")
     if os.path.isdir(features_zarr):
-        print("Loading features from Zarr...", flush=True)
+        print("Loading features from Zarr...")
         ds_features = xr.open_zarr(features_zarr)
-        ds_features = _make_cf(ds_features)
         ds_features.load()
+        ds_features = _make_cf(ds_features)
 
         for month in range(1, 13):
             ds_m = ds_features.sel(month=month, drop=True)
@@ -46,11 +44,11 @@ def load_datasets() -> dict:
                 datasets["%s_m%02d" % (var, month)] = ds_m[[var]]
                 if month == 1:
                     datasets[var] = ds_m[[var]]
-        print("  Loaded %d feature datasets" % len(datasets), flush=True)
+        print("  Loaded %d datasets" % len(datasets))
 
-    # 2. Fallback: load from NetCDF
+    # 2. Fallback: NetCDF
     elif os.path.isdir(FEATURES_DIR):
-        print("Loading features from NetCDF...", flush=True)
+        print("Loading features from NetCDF...")
         files = sorted(glob.glob(os.path.join(FEATURES_DIR, "features_month*_src50m.nc")))
         for fpath in files:
             month_str = os.path.basename(fpath).replace("features_month", "").replace("_src50m.nc", "")
@@ -62,7 +60,7 @@ def load_datasets() -> dict:
                 if month_str == "01":
                     datasets[var] = ds[[var]]
 
-    # 3. WOA23 SST
+    # 3. SST
     t_path = os.path.join(WOA23_DIR, "temperature", "woa23_decav91C0_t01_04.nc")
     if os.path.exists(t_path):
         ds_t = xr.open_dataset(t_path, decode_times=False)
@@ -80,7 +78,7 @@ def create_app():
     if not datasets:
         datasets["empty"] = xr.Dataset()
 
-    print("Serving %d WMS datasets" % len(datasets), flush=True)
+    print("Serving %d WMS datasets" % len(datasets))
     rest = xpublish.Rest(datasets, plugins={"wms": CfWmsPlugin()})
     return rest.app
 

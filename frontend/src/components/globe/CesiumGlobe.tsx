@@ -24,7 +24,7 @@ const LAYER_CONFIG: Record<string, { vmin: number; vmax: number; colormap: strin
   thermocline_gradient: { vmin: 0, vmax: 0.5, colormap: 'inferno', unit: '1/s', label: '跃层梯度' },
   convergence_zone_km: { vmin: 30, vmax: 70, colormap: 'turbo', unit: 'km', label: '会聚区距离' },
   shadow_zone_km: { vmin: 0, vmax: 50, colormap: 'magma', unit: 'km', label: '声影区距离' },
-  field_type: { vmin: 0, vmax: 4, colormap: 'Set1', unit: '', label: '声场类型' },
+  field_type: { vmin: 0, vmax: 4, colormap: 'tab10', unit: '', label: '声场类型' },
 }
 
 interface CesiumGlobeProps {
@@ -133,7 +133,7 @@ export function CesiumGlobe({ onClick }: CesiumGlobeProps) {
           format: 'image/png',
           transparent: 'true',
           colorscalerange: `${layerCfg.vmin},${layerCfg.vmax}`,
-          styles: 'raster/default',
+          styles: `raster/${layerCfg.colormap}`,
         },
       })
       // Disable GetFeatureInfo (xpublish-wms doesn't support it)
