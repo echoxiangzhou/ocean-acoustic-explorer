@@ -235,21 +235,36 @@ def process_month(month, depth_grid, src_depth=50.0):
     os.makedirs(OUTPUT_DIR, exist_ok=True)
     outfile = "%s/features_month%02d_src%dm.nc" % (OUTPUT_DIR, month, int(src_depth))
 
+    # Build CF-compliant Dataset with proper coordinate attributes
+    lat_da = xr.Variable("latitude", lat, attrs={
+        "units": "degrees_north",
+        "standard_name": "latitude",
+        "long_name": "latitude",
+        "axis": "Y",
+    })
+    lon_da = xr.Variable("longitude", lon, attrs={
+        "units": "degrees_east",
+        "standard_name": "longitude",
+        "long_name": "longitude",
+        "axis": "X",
+    })
+
     ds_out = xr.Dataset(
         {
-            "channel_axis_depth": (["lat", "lon"], axis, {"units": "m", "long_name": "Sound channel axis depth"}),
-            "surface_duct": (["lat", "lon"], duct, {"units": "m", "long_name": "Surface duct thickness"}),
-            "thermocline_gradient": (["lat", "lon"], grad, {"units": "1/s", "long_name": "Max thermocline sound speed gradient"}),
-            "convergence_zone_km": (["lat", "lon"], cz, {"units": "km", "long_name": "First convergence zone distance"}),
-            "shadow_zone_km": (["lat", "lon"], sz, {"units": "km", "long_name": "Shadow zone onset distance"}),
-            "field_type": (["lat", "lon"], ftype, {"long_name": "Sound field type: 1=CZ, 2=shallow, 3=polar, 4=mixed"}),
+            "channel_axis_depth": (["latitude", "longitude"], axis, {"units": "m", "long_name": "Sound channel axis depth", "standard_name": "channel_axis_depth"}),
+            "surface_duct": (["latitude", "longitude"], duct, {"units": "m", "long_name": "Surface duct thickness"}),
+            "thermocline_gradient": (["latitude", "longitude"], grad, {"units": "1/s", "long_name": "Max thermocline sound speed gradient"}),
+            "convergence_zone_km": (["latitude", "longitude"], cz, {"units": "km", "long_name": "First convergence zone distance"}),
+            "shadow_zone_km": (["latitude", "longitude"], sz, {"units": "km", "long_name": "Shadow zone onset distance"}),
+            "field_type": (["latitude", "longitude"], ftype.astype(np.float32), {"long_name": "Sound field type: 1=CZ, 2=shallow, 3=polar, 4=mixed"}),
         },
-        coords={"lat": lat, "lon": lon},
+        coords={"latitude": lat_da, "longitude": lon_da},
         attrs={
             "source": "WOA23 + GEBCO 2024",
             "formula": "TEOS-10 (gsw)",
             "src_depth_m": src_depth,
             "month": month,
+            "Conventions": "CF-1.8",
         },
     )
     ds_out.to_netcdf(outfile, encoding={
