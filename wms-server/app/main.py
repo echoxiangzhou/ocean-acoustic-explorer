@@ -2,7 +2,7 @@
 xpublish-wms server for OceanAcoustic Explorer.
 
 Preloads all feature data into memory at startup.
-NaN values replaced with _FillValue for correct transparent rendering.
+NaN values kept as-is (xpublish-wms renders NaN as transparent in raster mode).
 """
 
 import os
@@ -18,23 +18,14 @@ WOA23_DIR = os.getenv("WOA23_DIR", "/data/woa23")
 HOST = os.getenv("HOST", "0.0.0.0")
 PORT = int(os.getenv("PORT", "8090"))
 
-FILL_VALUE = -9999.0
-
 
 def _make_cf(ds: xr.Dataset) -> xr.Dataset:
-    """Ensure CF-compliant coordinates and handle NaN."""
+    """Ensure CF-compliant coordinates."""
     if "lat" in ds.dims:
         ds = ds.rename({"lat": "latitude", "lon": "longitude"})
     if "latitude" in ds.coords:
         ds["latitude"].attrs.update({"units": "degrees_north", "standard_name": "latitude", "axis": "Y"})
         ds["longitude"].attrs.update({"units": "degrees_east", "standard_name": "longitude", "axis": "X"})
-
-    # Replace NaN with fill value and set _FillValue attribute
-    for var in ds.data_vars:
-        if ds[var].dtype in (np.float32, np.float64):
-            ds[var] = ds[var].fillna(FILL_VALUE)
-            ds[var].attrs["_FillValue"] = FILL_VALUE
-            ds[var].attrs["missing_value"] = FILL_VALUE
     return ds
 
 
@@ -44,10 +35,10 @@ def load_datasets() -> dict:
     # 1. Load features from Zarr
     features_zarr = os.path.join(ZARR_DIR, "features.zarr")
     if os.path.isdir(features_zarr):
-        print("Loading features from Zarr...")
+        print("Loading features from Zarr...", flush=True)
         ds_features = xr.open_zarr(features_zarr)
-        ds_features.load()
         ds_features = _make_cf(ds_features)
+        ds_features.load()
 
         for month in range(1, 13):
             ds_m = ds_features.sel(month=month, drop=True)
@@ -55,11 +46,11 @@ def load_datasets() -> dict:
                 datasets["%s_m%02d" % (var, month)] = ds_m[[var]]
                 if month == 1:
                     datasets[var] = ds_m[[var]]
-        print("  Loaded %d datasets from features" % (len(datasets)))
+        print("  Loaded %d feature datasets" % len(datasets), flush=True)
 
     # 2. Fallback: load from NetCDF
     elif os.path.isdir(FEATURES_DIR):
-        print("Loading features from NetCDF...")
+        print("Loading features from NetCDF...", flush=True)
         files = sorted(glob.glob(os.path.join(FEATURES_DIR, "features_month*_src50m.nc")))
         for fpath in files:
             month_str = os.path.basename(fpath).replace("features_month", "").replace("_src50m.nc", "")
@@ -89,7 +80,7 @@ def create_app():
     if not datasets:
         datasets["empty"] = xr.Dataset()
 
-    print("Serving %d WMS datasets" % len(datasets))
+    print("Serving %d WMS datasets" % len(datasets), flush=True)
     rest = xpublish.Rest(datasets, plugins={"wms": CfWmsPlugin()})
     return rest.app
 

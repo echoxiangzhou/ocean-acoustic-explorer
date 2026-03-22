@@ -134,8 +134,6 @@ export function CesiumGlobe({ onClick }: CesiumGlobeProps) {
           transparent: 'true',
           colorscalerange: `${layerCfg.vmin},${layerCfg.vmax}`,
           styles: 'raster/default',
-          abovemax: 'transparent',
-          belowmin: 'transparent',
         },
       })
       // Disable GetFeatureInfo (xpublish-wms doesn't support it)
