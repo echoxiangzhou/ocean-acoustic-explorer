@@ -54,7 +54,7 @@ export function CesiumGlobe({ onClick }: CesiumGlobeProps) {
       infoBox: false,
       selectionIndicator: false,
       imageryProvider: new UrlTemplateImageryProvider({
-        url: 'http://10.16.202.44:8090/{z}/{x}/{y}.png',
+        url: 'http://10.16.202.44:8090/MapServer/tile/{z}/{x}/{y}.jpg',
       }),
     })
 
