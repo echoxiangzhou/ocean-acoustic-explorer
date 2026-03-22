@@ -8,6 +8,7 @@ Verified data formats:
   GEBCO:  elevation (int16), (lat=43200, lon=86400), 15 arc-second
 """
 
+import os
 import numpy as np
 import xarray as xr
 import gsw
@@ -40,20 +41,29 @@ WOA23_DEPTHS = [
 ]
 
 
-@lru_cache(maxsize=24)
+# In-memory cache for WOA23 data arrays (avoid repeated NAS I/O)
+_woa23_cache = {}
+
+
 def load_woa23_month(month: int) -> tuple:
     """
     Load WOA23 T/S for a given month.
-
-    Returns (ds_temp, ds_salt) xarray Datasets.
-    Variables: t_an (temperature °C), s_an (salinity PSU).
-    Must use decode_times=False due to "months since" time units.
+    Caches the full numpy arrays in memory after first load.
     """
+    if month in _woa23_cache:
+        return _woa23_cache[month]
+
     month_str = str(month).zfill(2)
     t_path = f"{WOA23_DIR}/temperature/woa23_decav91C0_t{month_str}_04.nc"
     s_path = f"{WOA23_DIR}/salinity/woa23_decav91C0_s{month_str}_04.nc"
     ds_t = xr.open_dataset(t_path, decode_times=False)
     ds_s = xr.open_dataset(s_path, decode_times=False)
+
+    # Pre-load into memory to avoid repeated NAS I/O
+    ds_t.load()
+    ds_s.load()
+
+    _woa23_cache[month] = (ds_t, ds_s)
     return ds_t, ds_s
 
 
@@ -66,12 +76,21 @@ def read_woa23_profile(lat: float, lon: float, month: int) -> dict:
     """
     ds_t, ds_s = load_woa23_month(month)
 
-    lat_idx = int(np.abs(ds_t.lat.values - lat).argmin())
-    lon_idx = int(np.abs(ds_t.lon.values - lon).argmin())
+    lat_name = "latitude" if "latitude" in ds_t.dims else "lat"
+    lon_name = "longitude" if "longitude" in ds_t.dims else "lon"
+    lat_idx = int(np.abs(ds_t[lat_name].values - lat).argmin())
+    lon_idx = int(np.abs(ds_t[lon_name].values - lon).argmin())
 
-    temp = ds_t["t_an"].values[0, :, lat_idx, lon_idx]  # (57,)
-    salt = ds_s["s_an"].values[0, :, lat_idx, lon_idx]  # (57,)
-    depth = ds_t["depth"].values  # (57,)
+    # Handle both Zarr (no time dim) and NetCDF (time=1 dim)
+    t_an = ds_t["t_an"]
+    s_an = ds_s["s_an"]
+    if "time" in t_an.dims:
+        temp = t_an.values[0, :, lat_idx, lon_idx]
+        salt = s_an.values[0, :, lat_idx, lon_idx]
+    else:
+        temp = t_an.values[:, lat_idx, lon_idx]
+        salt = s_an.values[:, lat_idx, lon_idx]
+    depth = ds_t["depth"].values
 
     valid = ~np.isnan(temp) & ~np.isnan(salt)
 
@@ -79,8 +98,8 @@ def read_woa23_profile(lat: float, lon: float, month: int) -> dict:
         "depth": depth[valid],
         "temperature": temp[valid],
         "salinity": salt[valid],
-        "lat": float(ds_t.lat.values[lat_idx]),
-        "lon": float(ds_t.lon.values[lon_idx]),
+        "lat": float(ds_t[lat_name].values[lat_idx]),
+        "lon": float(ds_t[lon_name].values[lon_idx]),
         "source": "woa23",
         "temp_type": "in_situ",  # WOA23 stores in-situ temperature
     }

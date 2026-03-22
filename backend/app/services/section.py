@@ -35,8 +35,11 @@ def compute_section_field(
     """
     ds_t, ds_s = load_woa23_month(month)
 
-    lat_arr = ds_t.lat.values
-    lon_arr = ds_t.lon.values
+    # Support both lat/lon (NetCDF) and latitude/longitude (Zarr) naming
+    lat_name = "latitude" if "latitude" in ds_t.dims else "lat"
+    lon_name = "longitude" if "longitude" in ds_t.dims else "lon"
+    lat_arr = ds_t[lat_name].values
+    lon_arr = ds_t[lon_name].values
     depth = ds_t.depth.values  # 57 levels
 
     # Generate points along section
@@ -53,8 +56,15 @@ def compute_section_field(
     salt_2d = np.full((num_range_points, len(depth)), np.nan, dtype=np.float32)
     ss_2d = np.full((num_range_points, len(depth)), np.nan, dtype=np.float32)
 
-    t_all = ds_t["t_an"].values[0]  # (57, 720, 1440)
-    s_all = ds_s["s_an"].values[0]
+    # Get full 3D arrays (already in memory from cache)
+    t_an = ds_t["t_an"]
+    s_an = ds_s["s_an"]
+    if "time" in t_an.dims:
+        t_all = t_an.values[0]  # (57, 720, 1440)
+        s_all = s_an.values[0]
+    else:
+        t_all = t_an.values
+        s_all = s_an.values
 
     for i, (lat, lon) in enumerate(zip(lats, lons)):
         lat_idx = int(np.abs(lat_arr - lat).argmin())
