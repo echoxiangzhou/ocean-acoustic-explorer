@@ -64,7 +64,7 @@ export function CesiumGlobe({ onClick }: CesiumGlobeProps) {
     // Cesium sends: {z}/{x}/{y} -> we need {z}/{y}/{x}
     // Solution: use Cesium's built-in {y} and {x} but swap in URL template
     const baseProvider = new UrlTemplateImageryProvider({
-      url: 'http://10.16.202.44:8090/MapServer/tile/{z}/{y}/{x}.jpg',
+      url: '/MapServer/tile/{z}/{y}/{x}.jpg',
       maximumLevel: 18,
       credit: 'Satellite Imagery',
     })
