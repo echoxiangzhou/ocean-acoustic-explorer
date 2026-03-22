@@ -130,11 +130,9 @@ export function CesiumGlobe({ onClick }: CesiumGlobeProps) {
         layers: activeLayer,
         getFeatureInfoUrl: undefined as any,
         parameters: {
-          version: '1.3.0',
           format: 'image/png',
           transparent: 'true',
           colorscalerange: `${layerCfg.vmin},${layerCfg.vmax}`,
-          crs: 'EPSG:4326',
           styles: 'raster/default',
         },
       })
