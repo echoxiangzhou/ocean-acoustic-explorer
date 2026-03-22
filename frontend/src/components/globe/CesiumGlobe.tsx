@@ -3,7 +3,6 @@ import {
   Viewer,
   WebMapServiceImageryProvider,
   TileMapServiceImageryProvider,
-  buildModuleUrl,
   Color,
   Cartographic,
   Math as CesiumMath,
@@ -54,9 +53,9 @@ export function CesiumGlobe({ onClick }: CesiumGlobeProps) {
       geocoder: false,
       infoBox: false,
       selectionIndicator: false,
-      // Cesium built-in Natural Earth II satellite imagery (no external requests)
+      // Cesium built-in Natural Earth II satellite imagery (local, no external requests)
       imageryProvider: new TileMapServiceImageryProvider({
-        url: buildModuleUrl('Assets/Textures/NaturalEarthII'),
+        url: '/cesium/Assets/Textures/NaturalEarthII',
       }),
     })
 
