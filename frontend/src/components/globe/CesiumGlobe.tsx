@@ -2,7 +2,8 @@ import { useRef, useEffect } from 'react'
 import {
   Viewer,
   WebMapServiceImageryProvider,
-  ArcGisMapServerImageryProvider,
+  TileMapServiceImageryProvider,
+  buildModuleUrl,
   Color,
   Cartographic,
   Math as CesiumMath,
@@ -53,9 +54,9 @@ export function CesiumGlobe({ onClick }: CesiumGlobeProps) {
       geocoder: false,
       infoBox: false,
       selectionIndicator: false,
-      // ArcGIS World Imagery (satellite basemap, free)
-      imageryProvider: new ArcGisMapServerImageryProvider({
-        url: 'https://services.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer',
+      // Cesium built-in Natural Earth II satellite imagery (no external requests)
+      imageryProvider: new TileMapServiceImageryProvider({
+        url: buildModuleUrl('Assets/Textures/NaturalEarthII'),
       }),
     })
 
