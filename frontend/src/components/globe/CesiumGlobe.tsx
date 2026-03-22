@@ -53,10 +53,16 @@ export function CesiumGlobe({ onClick }: CesiumGlobeProps) {
       geocoder: false,
       infoBox: false,
       selectionIndicator: false,
-      imageryProvider: new UrlTemplateImageryProvider({
-        url: 'http://10.16.202.44:8090/MapServer/tile/{z}/{x}/{y}.jpg',
-      }),
+      baseLayerPicker: false,
+      imageryProvider: false as any,  // Disable default imagery
     })
+
+    // Add satellite basemap as base layer
+    const baseLayer = new UrlTemplateImageryProvider({
+      url: 'http://10.16.202.44:8090/MapServer/tile/{z}/{x}/{y}.jpg',
+      maximumLevel: 18,
+    })
+    viewer.imageryLayers.addImageryProvider(baseLayer)
 
     viewer.scene.globe.baseColor = Color.fromCssColorString('#0a1628')
     viewer.camera.flyTo({
