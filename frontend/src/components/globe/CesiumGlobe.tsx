@@ -2,7 +2,7 @@ import { useRef, useEffect } from 'react'
 import {
   Viewer,
   WebMapServiceImageryProvider,
-  TileMapServiceImageryProvider,
+  UrlTemplateImageryProvider,
   Color,
   Cartographic,
   Math as CesiumMath,
@@ -53,9 +53,8 @@ export function CesiumGlobe({ onClick }: CesiumGlobeProps) {
       geocoder: false,
       infoBox: false,
       selectionIndicator: false,
-      // Cesium built-in Natural Earth II satellite imagery (local, no external requests)
-      imageryProvider: new TileMapServiceImageryProvider({
-        url: '/cesium/Assets/Textures/NaturalEarthII',
+      imageryProvider: new UrlTemplateImageryProvider({
+        url: 'http://10.16.202.44:8090/{z}/{x}/{y}.png',
       }),
     })
 
