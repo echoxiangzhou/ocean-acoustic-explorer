@@ -113,37 +113,57 @@ def extract_features(depth, ss, ocean_depth, lat, src_depth=50.0):
     neg = grad[grad < 0]
     thermo_grad = float(np.abs(np.min(neg))) if len(neg) > 0 else 0.0
 
-    # 4. CZ distance
+    # 4. CZ distance (improved: extrapolate beyond 1500m)
     cz = np.nan
-    if ocean_depth > 1000:
+    if ocean_depth > 1000 and len(c) >= 5:
         src_idx = int(np.abs(d - src_depth).argmin())
         c_src = c[src_idx]
         c_min = float(np.min(c))
-        below = c[min_idx:]
-        d_below = d[min_idx:]
-        crit_depth = np.nan
-        for i in range(1, len(below)):
-            if below[i] >= c_src:
-                frac = (c_src - below[i-1]) / (below[i] - below[i-1])
-                crit_depth = d_below[i-1] + frac * (d_below[i] - d_below[i-1])
-                break
-        if not np.isnan(crit_depth) and crit_depth <= ocean_depth:
-            delta_c = c_src - c_min
-            if delta_c > 0:
+        delta_c = c_src - c_min
+
+        if delta_c > 2.0:  # Need meaningful speed difference
+            # Try to find critical depth in data
+            below = c[min_idx:]
+            d_below = d[min_idx:]
+            crit_depth = np.nan
+            for i in range(1, len(below)):
+                if below[i] >= c_src:
+                    frac = (c_src - below[i-1]) / (below[i] - below[i-1])
+                    crit_depth = d_below[i-1] + frac * (d_below[i] - d_below[i-1])
+                    break
+
+            # If not found in data, extrapolate using deep-water gradient
+            # Below 1000m, sound speed increases ~0.017 m/s per meter (pressure effect)
+            if np.isnan(crit_depth) and len(c) >= 3:
+                c_deep = c[-1]
+                d_deep = d[-1]
+                deep_gradient = 0.017  # m/s per meter (typical deep ocean)
+                if c[-1] < c_src:
+                    extra_depth = (c_src - c_deep) / deep_gradient
+                    crit_depth = d_deep + extra_depth
+
+            if not np.isnan(crit_depth) and crit_depth <= ocean_depth:
                 H = crit_depth / 1000.0
+                # CZ distance formula: R = 2 * sqrt(2 * R_earth * H * delta_c / c_min)
                 cz_val = 2.0 * np.sqrt(2.0 * delta_c / c_min * 6371.0 * H)
-                if 10 < cz_val < 200:
+                if 5 < cz_val < 300:
                     cz = cz_val
 
-    # 5. Shadow zone
+    # 5. Shadow zone (improved)
     sz = np.nan
     src_idx = int(np.abs(d - src_depth).argmin())
-    if src_idx > 0:
-        dc_dz = (c[src_idx] - c[src_idx-1]) / (d[src_idx] - d[src_idx-1])
-        if dc_dz < 0:
-            sz_val = 2.0 * src_depth * c[src_idx] / (abs(dc_dz) * 1000.0)
-            if 1 < sz_val < 100:
-                sz = sz_val
+    if src_idx > 0 and src_idx < len(c) - 1:
+        # Use centered difference for gradient
+        dc_dz = (c[src_idx + 1] - c[src_idx - 1]) / (d[src_idx + 1] - d[src_idx - 1])
+        if dc_dz < -0.001:  # Negative gradient (thermocline)
+            # Shadow zone onset ~ skip distance of limiting ray
+            c_src_val = c[src_idx]
+            # R_shadow ≈ sqrt(2 * c * |dz| / |dc/dz|) for circular ray paths
+            dz_to_axis = abs(d[min_idx] - src_depth)
+            if dz_to_axis > 10:
+                sz_val = np.sqrt(2.0 * c_src_val * dz_to_axis / abs(dc_dz)) / 1000.0
+                if 1 < sz_val < 200:
+                    sz = sz_val
 
     # 6. Field type
     if ocean_depth < 200:
