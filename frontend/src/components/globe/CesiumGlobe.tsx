@@ -3,7 +3,6 @@ import {
   Viewer,
   WebMapServiceImageryProvider,
   UrlTemplateImageryProvider,
-  ArcGisMapServerImageryProvider,
   Color,
   Cartographic,
   Math as CesiumMath,
@@ -58,11 +57,18 @@ export function CesiumGlobe({ onClick }: CesiumGlobeProps) {
       imageryProvider: false as any,  // Disable default imagery
     })
 
-    // Add satellite basemap (ArcGIS MapServer format: z/y/x)
-    const baseLayer = new ArcGisMapServerImageryProvider({
-      url: 'http://10.16.202.44:8090/MapServer',
+    // Satellite basemap via internal tile server (ArcGIS z/y/x order)
+    // Cesium UrlTemplateImageryProvider uses {x},{y},{z} - we swap to match ArcGIS
+    // by using {reverseY} is not supported, so we use custom URL with y in x position
+    // ArcGIS tile URL: /MapServer/tile/{z}/{y}/{x}.jpg
+    // Cesium sends: {z}/{x}/{y} -> we need {z}/{y}/{x}
+    // Solution: use Cesium's built-in {y} and {x} but swap in URL template
+    const baseProvider = new UrlTemplateImageryProvider({
+      url: 'http://10.16.202.44:8090/MapServer/tile/{z}/{y}/{x}.jpg',
+      maximumLevel: 18,
+      credit: 'Satellite Imagery',
     })
-    viewer.imageryLayers.addImageryProvider(baseLayer)
+    viewer.imageryLayers.addImageryProvider(baseProvider)
 
     viewer.scene.globe.baseColor = Color.fromCssColorString('#0a1628')
     viewer.camera.flyTo({
