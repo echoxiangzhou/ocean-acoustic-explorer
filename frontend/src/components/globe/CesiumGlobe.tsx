@@ -3,6 +3,7 @@ import {
   Viewer,
   WebMapServiceImageryProvider,
   UrlTemplateImageryProvider,
+  ArcGisMapServerImageryProvider,
   Color,
   Cartographic,
   Math as CesiumMath,
@@ -57,10 +58,9 @@ export function CesiumGlobe({ onClick }: CesiumGlobeProps) {
       imageryProvider: false as any,  // Disable default imagery
     })
 
-    // Add satellite basemap as base layer
-    const baseLayer = new UrlTemplateImageryProvider({
-      url: 'http://10.16.202.44:8090/MapServer/tile/{z}/{x}/{y}.jpg',
-      maximumLevel: 18,
+    // Add satellite basemap (ArcGIS MapServer format: z/y/x)
+    const baseLayer = new ArcGisMapServerImageryProvider({
+      url: 'http://10.16.202.44:8090/MapServer',
     })
     viewer.imageryLayers.addImageryProvider(baseLayer)
 
